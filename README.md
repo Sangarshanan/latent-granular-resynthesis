@@ -1,4 +1,4 @@
-# Windowed Latent Matching for Granular Audio Resynthesis
+# Granular Audio Resynthesis
 
 Granular synthesis decomposes audio into small segments called grains and reassembles them to create new textures. Traditional implementations operate directly on time-domain waveforms, constraining the matching vocabulary to surface-level acoustic similarity. We present a system that performs granular resynthesis entirely in the continuous latent space of a neural audio codec (Encodec 24 kHz). 
 
