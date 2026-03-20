@@ -1,1 +1,7 @@
 # Windowed Latent Matching for Granular Audio Resynthesis
+
+Granular synthesis decomposes audio into small segments called grains and reassembles them to create new textures. Traditional implementations operate directly on time-domain waveforms, constraining the matching vocabulary to surface-level acoustic similarity. We present a system that performs granular resynthesis entirely in the continuous latent space of a neural audio codec (Encodec 24 kHz). 
+
+A target signal is encoded into a sequence of 128-dimensional latent vectors; a source pool is encoded similarly, forming a latent codebook. Each target frame is replaced by the pool frame with the highest cosine similarity, computed over a local context window that can span multiple frames. The matched sequence is decoded back to audio, yielding output that preserves the target's temporal envelope while adopting the source's timbral character. We introduce configurable **window size**, **hop**, **stride**, and **grain size** parameters that control matching context, pool resolution, query density, and output smoothness respectively, and evaluate all combinations on percussive material using Fréchet Audio Distance (FAD) and MFCC-L2.
+
+Results show that for percussion, small stride and moderate window size minimize FAD, while for instruments, large grains and dense stride yield the best scores. Pool augmentation broadens timbral coverage for percussion but does not improve FAD for instruments. The latent space is more consistent for harmonic material, enabling lower FAD and smoother resynthesis.
