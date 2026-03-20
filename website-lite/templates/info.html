@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% set active = "info" %}
+{% set title = "Latent Granular Resynthesis" %}
+
+{% block content %}
+  <main class="container content">
+    <!-- (Content from info.html, with only static audio/images, no demo links) -->
+    <section id="idea" class="card">
+      <h1>Introduction</h1>
+      <p>
+        Treat a neural audio codec as a granular synthesis domain: encode a target and a source pool into
+        Encodec latents, then re-synthesize the target by replacing each latent frame with its closest match
+        from the pool. This keeps the target’s macro-timing while transplanting timbre from the pool.
+      </p>
+    </section>
+    <!-- (Rest of info.html content, as in the original, but without demo/morph links) -->
+    <!-- ... (see previous reads for full content) ... -->
+  </main>
+{% endblock %}

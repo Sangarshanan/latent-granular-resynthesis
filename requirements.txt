@@ -1,8 +1,6 @@
 fastapi
 uvicorn
-jinja2
 numpy
 soundfile
 torch
 transformers
-pedalboard
