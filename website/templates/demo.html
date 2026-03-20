@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% set active = "demo" %}
+{% set title = "Live Demo · Latent Granular Resynthesis" %}
+
+{% block content %}
+  <main class="container content">
+    <section class="card">
+      <h1>Live demo: amen break → tabla</h1>
+      <p>
+        The slider incrementally replaces <strong>Encodec RVQ codebooks</strong> in the target token stack with the
+        matched pool tokens (Tokui-style latent matching, then codebook replacement). Audio re-renders on each update.
+      </p>
+
+      <div class="demo-grid">
+        <div class="demo-controls">
+          <button id="startDemo" class="btn btn-primary">Start Demo</button>
+          <label for="k" style="margin-top:1em;">Codebooks replaced: <span id="kVal">0</span> / {{ n_q }}</label>
+          <input id="k" type="range" min="0" max="{{ n_q }}" step="1" value="0" disabled />
+          <div class="muted">Rendering ~{{ seconds }}s each time; fast changes are debounced.</div>
+          <div id="status" class="status"></div>
+        </div>
+        <div class="demo-audio">
+          <div class="label">Output</div>
+          <audio id="out" controls></audio>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h1>Live demo: multi-pool interpolation from Djembe → Tabla</h1>
+      <p>
+        Based on <code>tokui_style_transfer_pool_morph</code>: the target (amen) is matched independently against two pools
+        (djembe and tabla), then the matched latent streams are blended by <code>morph</code>.
+      </p>
+
+      <div class="demo-grid">
+        <div class="demo-controls">
+          <button id="startMorphDemo" class="btn btn-primary">Start Demo</button>
+          <label for="m" style="margin-top:1em;">morph: <span id="mVal">0.00</span> (0 = djembe, 1 = tabla)</label>
+          <input id="m" type="range" min="0" max="1" step="0.01" value="0" disabled />
+          <div class="muted">Rendering ~{{ seconds }}s each time; fast changes are debounced.</div>
+          <div id="statusMorph" class="status"></div>
+        </div>
+        <div class="demo-audio">
+          <div class="label">Output</div>
+          <audio id="outMorph" controls></audio>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="/static/demo.js"></script>
+{% endblock %}

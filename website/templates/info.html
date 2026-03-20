@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% set active = "info" %}
+{% set title = "Latent Granular Resynthesis" %}
+
+{% block content %}
+
+  <main class="container content">
+    <section id="idea" class="card">
+      <h1>Introduction</h1>
+      <p>
+        Treat a neural audio codec as a granular synthesis domain: encode a target and a source pool into
+        Encodec latents, then re-synthesize the target by replacing each latent frame with its closest match
+        from the pool. This keeps the target’s macro-timing while transplanting timbre from the pool.
+      </p>
+      <p class="muted">
+        Demos: <a href="/demo">codebook replacement slider</a> and <a href="/morph">multi-pool interpolation</a>.
+      </p>
+    </section>
+
+    <section id="method" class="card">
+      <h2>What we do</h2>
+      <p>
+        We perform granular resynthesis in Encodec’s 128‑D latent space using windowed cosine similarity matching.
+        Matching uses a local context window; output is assembled with configurable hop/stride and optional multi‑frame
+        grains (overlap‑add) for smoother sustained content. We also evaluate pedalboard-based pool augmentation.
+      </p>
+      <h2>Experiment</h2>
+      <p>
+        We sweep <strong>grain size</strong>, <strong>window size</strong>, <strong>stride</strong>, <strong>hop</strong>,
+        and <strong>augmentation</strong> across pairwise target→pool combinations in two categories:
+        <em>percussion</em> and <em>instruments</em>. Metrics: MFCC‑L2 and Fréchet Audio Distance (FAD) against the pool.
+      </p>
+    </section>
+
+    <section id="percussion" class="card">
+      <h2>Percussion: what moves the needle</h2>
+      <p>
+        Percussion is transient-dominated, so “frame-wise” matching can be brittle: small timing mismatches become
+        clicks, and longer grains can smear attacks.
+      </p>
+
+      <div class="example">
+        <p>Simple cosine matching: works on noisy texture (kitchen pan)</p>
+        <div class="kv">
+          <div><strong>Method</strong></div><div><code>tokui_style_transfer_cosine</code></div>
+        </div>
+        <div class="audio-row">
+          <div>
+            <div class="label">Target (amen)</div>
+            <audio controls preload="none" src="/static/audio/examples/percussion/cosine_kitchen_pan/target.wav"></audio>
+          </div>
+          <div>
+            <div class="label">Pool (kitchen pan)</div>
+            <audio controls preload="none" src="/static/audio/examples/percussion/cosine_kitchen_pan/pool.wav"></audio>
+          </div>
+          <div>
+            <div class="label">Output (cosine)</div>
+            <audio controls preload="none" src="/static/audio/examples/percussion/cosine_kitchen_pan/output_cosine.wav"></audio>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="example">
+          <p>…but fails on structured percussion (amen → tabla)</p>
+          <div class="kv">
+            <div><strong>Method</strong></div><div><code>tokui_style_transfer_cosine</code></div>
+          </div>
+          <div class="audio-row">
+            <div>
+              <div class="label">Pool (tabla)</div>
+              <audio controls preload="none" src="/static/audio/examples/percussion/cosine_tabla_bad/pool.wav"></audio>
+            </div>
+            <div>
+              <div class="label">Output (cosine)</div>
+              <audio controls preload="none" src="/static/audio/examples/percussion/cosine_tabla_bad/output_cosine.wav"></audio>
+            </div>
+          </div>
+        </div>
+
+        <div class="example">
+          <p>Windowed matching helps tabla: adds local context</p>
+          <div class="kv">
+            <div><strong>Method</strong></div><div><code>tokui_style_transfer_window</code> (window=3)</div>
+          </div>
+          <div class="audio-row">
+            <div>
+              <div class="label">Output (windowed)</div>
+              <audio controls preload="none" src="/static/audio/examples/percussion/window_tabla/output_window.wav"></audio>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="example">
+        <p>Grain size tradeoff: bigger grains smear transients</p>
+        <p class="muted">
+          On percussion, increasing <code>grain_size</code> can reduce discontinuities but often softens attacks (less “snap”).
+        </p>
+        <div class="kv">
+          <div><strong>Method</strong></div><div><code>tokui_style_transfer_window</code> (window=3, stride=1, hop=1)</div>
+        </div>
+        <div class="audio-row">
+          <div>
+            <div class="label">Output (grain=1)</div>
+            <audio controls preload="none" src="/static/audio/examples/percussion/grain_amen_to_tabla/output_grain1.wav"></audio>
+          </div>
+          <div>
+            <div class="label">Output (grain=5)</div>
+            <audio controls preload="none" src="/static/audio/examples/percussion/grain_amen_to_tabla/output_grain5.wav"></audio>
+          </div>
+        </div>
+      </div>
+
+      <h3>Notebook plots (amen → tabla, windowed match)</h3>
+      <p class="muted">
+        Exported from the updated <code>encodec.ipynb</code> and saved to <code>website/static/plots/notebook</code>.
+      </p>
+
+      <figure>
+        <p class="muted">
+          Waveforms: the output keeps amen’s timing density but inherits more tabla-like envelope/dynamics (often lower peak range).
+        </p>
+        <img alt="Amen/tabla waveforms" src="/static/plots/notebook/amen_tabla_waveforms.png" />
+      </figure>
+
+      <figure>
+        <p class="muted">
+          PCA: target and pool occupy distinct regions. Matched-pool frames and output concentrate near the pool region, which is
+          consistent with “projecting” the target trajectory onto pool-like latent vocabulary rather than interpolating between them.
+        </p>
+        <img alt="Latent PCA" src="/static/plots/notebook/amen_tabla_latents_pca.png" />
+      </figure>
+
+    </section>
+
+    <section id="instruments" class="card">
+      <h2>Instruments: smoother latent trajectories</h2>
+      <p>
+        Sustained/harmonic sources tend to benefit from longer grains: you preserve partials over multiple frames and
+        reduce “jitter” from frame-to-frame token jumps.
+      </p>
+
+      <div class="example">
+        <h3>Bigger grains help: violin → sax</h3>
+        <div class="kv">
+          <div><strong>Method</strong></div><div><code>tokui_style_transfer_window</code> (window=1, stride=1, hop=1)</div>
+        </div>
+        <div class="audio-row">
+          <div>
+            <div class="label">Output (grain=1)</div>
+            <audio controls preload="none" src="/static/audio/examples/instruments/grain_violin_to_sax/output_grain1.wav"></audio>
+          </div>
+          <div>
+            <div class="label">Output (grain=5)</div>
+            <audio controls preload="none" src="/static/audio/examples/instruments/grain_violin_to_sax/output_grain5.wav"></audio>
+          </div>
+        </div>
+      </div>
+
+      <div class="example">
+        <h3>Augmentation improves matching: violin → sax</h3>
+        <div class="kv">
+          <div><strong>Config</strong></div><div>grain_size=5, stride=3,</div>
+        </div>
+        <div class="audio-row">
+          <div>
+            <div class="label">Output (no aug)</div>
+            <audio controls preload="none" src="/static/audio/examples/instruments/aug_violin_to_sax/output_none.wav"></audio>
+          </div>
+          <div>
+            <div class="label">Output (augmented)</div>
+            <audio controls preload="none" src="/static/audio/examples/instruments/aug_violin_to_sax/output_augmented.wav"></audio>
+          </div>
+        </div>
+        <p class="muted">
+          Why augmentation helps here: pitch/gain-shifted pool variants broaden the pool’s latent coverage, so the matcher
+          finds closer harmonic candidates. On percussion, this often helps less because the main errors are timing/attack
+          alignment rather than “missing pitched vocabulary”.
+        </p>
+      </div>
+    </section>
+
+    <section id="plots" class="card">
+      <h2>Evaluation plots</h2>
+
+      <figure>
+        <p>Grain size sweep:</strong> Shows how increasing <code>grain_size</code> affects Fréchet Audio Distance (FAD) and MFCC-L2 for percussion and instruments. Larger grains dramatically reduce FAD and MFCC-L2, especially for instruments, by preserving more temporal context and reducing frame-to-frame jitter. For percussion, large grains can also smear transients.
+        &#160;</p>
+          <img alt="Grain size plot" src="/static/plots/01_grain_size.png" />
+      </figure>
+
+      <figure>
+          <p>Stride sweep:</strong> Examines the effect of <code>stride</code> (distance between target query positions). Lower stride (denser matching) yields lower FAD, especially for percussion. Higher stride leaves more frames to be filled by overlap-add, increasing artefacts and FAD.
+          &#160;</p>
+        <img alt="Stride plot" src="/static/plots/03_stride.png" />
+      </figure>
+
+      <figure>
+          <p>Augmentation:</strong> Compares results with and without pedalboard-based pool augmentation. Augmentation increases the codebook size by adding pitch/gain-shifted pool variants. This helps instruments (lower FAD), but for percussion, the benefit is smaller and sometimes increases MFCC-L2 due to more diverse but less precise matches.
+          &#160;</p>
+        <img alt="Augmentation plot" src="/static/plots/05_augmentation.png" />
+      </figure>
+
+      <figure>
+          <p><strong>Parameter sensitivity:</strong> Summarizes how much each parameter (grain size, window size, stride, hop) moves FAD for each category. Grain size and stride have the largest impact, especially for percussion. Hop and window size have smaller effects.
+          &#160;</p>
+        <img alt="Parameter sensitivity" src="/static/plots/10_parameter_sensitivity.png" />
+      </figure>
+    </section>
+  </main>
+{% endblock %}

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ title if title else "Latent Granular Resynthesis" }}</title>
+    <link rel="stylesheet" href="/static/site.css" />
+  </head>
+  <body>
+    <!-- Primary navbar (site-level) -->
+    <header class="nav-primary">
+      <div class="container">
+        <div class="brand">
+          <div class="brand-title">Latent Granular Resynthesis</div>
+          <div class="brand-sub">Encodec-latent windowed matching + codebook blending</div>
+        </div>
+        <nav class="nav-links" aria-label="Primary">
+          <a class="{% if active=='info' %}active{% endif %}" href="/">Info</a>
+          <a class="{% if active=='demo' %}active{% endif %}" href="/demo">Live Demo</a>
+        </nav>
+      </div>
+    </header>
+
+    {% block content %}{% endblock %}
+
+    <footer class="footer">
+      <div class="container">
+        <div>Built with FastAPI.</div>
+      </div>
+    </footer>
+  </body>
+</html>
+
